@@ -5,10 +5,12 @@ import matplotlib.pyplot as plt
 import sys
 import numpy as np
 import os
+from correlation import run_correlation
 
 WINDOW_SIZE = 500
 START = 25000
 NUM_OF_TRACES = 3
+EXPORT_PATH = 'trace-set.trs'
 
 
 def read_file():
@@ -71,7 +73,7 @@ def plot(traces, copies):
 def create_trs(data, aligned_traces):
     #TODO: copy header from original trs file
     with trsfile.trs_open(
-		'trace-set.trs',                 # File name of the trace set
+            EXPORT_PATH,                 # File name of the trace set
 		'w',                             # Mode: r, w, x, a (default to x)
 		# Zero or more options can be passed (supported options depend on the storage engine)
 		engine = 'TrsEngine',            # Optional: how the trace set is stored (defaults to TrsEngine)
@@ -119,3 +121,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    run_correlation(EXPORT_PATH)

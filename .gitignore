@@ -1,0 +1,6 @@
+
+.idea/
+
+*.trs
+
+peak-alignment/__pycache__/
