@@ -97,7 +97,7 @@ def create_trs(data, aligned_traces):
         traces.append(
                 trsfile.Trace(
                     trsfile.SampleCoding.FLOAT,
-                    data[0][ peak_idx - WINDOW_SIZE: peak_idx + WINDOW_SIZE ],
+                    data[0],
                     TraceParameterMap({'LEGACY_DATA': tp.ByteArrayParameter(os.urandom(16))})
                 )
         )
@@ -107,7 +107,7 @@ def create_trs(data, aligned_traces):
             traces.append(
                 trsfile.Trace(
                     trsfile.SampleCoding.FLOAT,
-                    aligned_traces[i][ peak_idx - WINDOW_SIZE: peak_idx + WINDOW_SIZE ],
+                    aligned_traces[i],
                     TraceParameterMap({'LEGACY_DATA': tp.ByteArrayParameter(os.urandom(16))})
                 )
             )
