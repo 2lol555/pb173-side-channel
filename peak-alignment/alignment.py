@@ -6,47 +6,38 @@ import sys
 import numpy as np
 import os
 from correlation import run_correlation
+from tqdm import trange
 
 WINDOW_SIZE = 500
 START = 25000
-NUM_OF_TRACES = 3
+NUM_OF_TRACES = 1000
 EXPORT_PATH = 'trace-set.trs'
 
 
-def read_file():
-    samples_list = []
-    with trsfile.open(sys.argv[1], 'r') as traces:
-        for header, value in traces.get_headers().items():
-            print(header, '=', value)
-        for i in range(NUM_OF_TRACES):
-            samples_list.append(traces[i].samples)
-    return samples_list
-
-
 def align(traces_list, diffs):
-    aligned = [[] for _ in range(len(traces_list) - 1)]
+    aligned = [np.array([]) for _ in range(len(traces_list) - 1)]
     for i in range(len(traces_list) - 1):
-        peak_idx = np.argmax(traces_list[i + 1], axis=0);
-        average = np.mean(traces_list[i + 1], axis=0);
-        aligned[i].extend(traces_list[i + 1][:peak_idx - WINDOW_SIZE])
-        if (diffs[i][0] < 0):
-            aligned[i].extend([average for _ in range(abs(diffs[i][0]))])
-            aligned[i].extend(traces_list[i + 1][peak_idx - WINDOW_SIZE: peak_idx + WINDOW_SIZE])
+        peak_idx = np.argmax(traces_list[i + 1], axis=0)
+        average = np.mean(traces_list[i + 1], axis=0)
+
+        aligned[i] = np.concatenate((aligned[i], traces_list[i + 1][:peak_idx - WINDOW_SIZE]))
+
+        if diffs[i][0] < 0:
+            aligned[i] = np.concatenate((aligned[i], np.tile(average, abs(diffs[i][0]))))
+            aligned[i] = np.concatenate((aligned[i], traces_list[i + 1][peak_idx - WINDOW_SIZE: peak_idx + WINDOW_SIZE]))
         else:
-            aligned[i].extend(traces_list[i + 1][ peak_idx - WINDOW_SIZE + diffs[i][0]: peak_idx + WINDOW_SIZE ])
+            aligned[i] = np.concatenate((aligned[i], traces_list[i + 1][peak_idx - WINDOW_SIZE + diffs[i][0]: peak_idx + WINDOW_SIZE ]))
 
-        aligned[i].extend(traces_list[i + 1][peak_idx + WINDOW_SIZE:])
-    
+        aligned[i] = np.concatenate((aligned[i], traces_list[i + 1][peak_idx + WINDOW_SIZE:]))
+
     return aligned
-
 
 def peak_disalignment(traces):
     diffs = []
     template = np.argmax(traces[0], axis=0)
-    for i in range(1,NUM_OF_TRACES):
+    for i in range(1,len(traces)):
         diffs.append([])
         diffs[i - 1].append(np.argmax(traces[i][template - WINDOW_SIZE: template +WINDOW_SIZE],axis=0) - WINDOW_SIZE)
-    print(diffs)
     return diffs
 
 
@@ -70,7 +61,7 @@ def plot(traces, copies):
     plt.show()
 
 
-def create_trs(data, aligned_traces):
+def create_trs():
     #TODO: copy header from original trs file
     with trsfile.trs_open(
             EXPORT_PATH,                 # File name of the trace set
@@ -92,32 +83,30 @@ def create_trs(data, aligned_traces):
 		                                 #   N        : TRS file is updated after N traces
 	) as traces:
 
-        peak_idx = np.argmax(data[0], axis=0);
         #TODO: copy legacy data from original traces
-        traces.append(
-                trsfile.Trace(
-                    trsfile.SampleCoding.FLOAT,
-                    data[0],
-                    TraceParameterMap({'LEGACY_DATA': tp.ByteArrayParameter(os.urandom(16))})
-                )
-        )
-        for i in range(0, len(aligned_traces)):
-            peak_idx = np.argmax(aligned_traces[i], axis=0)
+        
+        with trsfile.open(sys.argv[1], 'r') as input_traces:
+            data = []
+            for i in trange(NUM_OF_TRACES):
+                if i == 0:
+                    data.append(np.array(input_traces[0].samples, float))
+                else:
+                    data.append(np.array(input_traces[i].samples, float))
+                    aligned = align(np.array(data), peak_disalignment(np.array(data)))
             # Adding one Trace
-            traces.append(
-                trsfile.Trace(
-                    trsfile.SampleCoding.FLOAT,
-                    aligned_traces[i],
-                    TraceParameterMap({'LEGACY_DATA': tp.ByteArrayParameter(os.urandom(16))})
+                traces.append(
+                    trsfile.Trace(
+                        trsfile.SampleCoding.FLOAT,
+                        data[0] if i == 0 else aligned[0],
+                        TraceParameterMap({'LEGACY_DATA': tp.ByteArrayParameter(os.urandom(16))})
+                    )
                 )
-            )
+                if (len(data) > 1):
+                    data.pop()
 
 def main(): 
-    data = read_file() 
-    diffs = peak_disalignment(data)
-    aligned_traces = align(data, diffs)
-    create_trs(data, aligned_traces)
-    plot(data, aligned_traces)    
+    create_trs()
+    #plot(data, aligned_traces)    
 
 if __name__ == "__main__":
     main()
