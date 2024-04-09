@@ -1,35 +1,32 @@
 import trsfile
 from trsfile.parametermap import TraceSetParameterMap
-import trsfile.traceparameter as tp
 from trsfile.parametermap import TraceParameterMap, TraceParameterDefinitionMap
 from trsfile.traceparameter import ByteArrayParameter, ParameterType, TraceParameterDefinition
 import matplotlib.pyplot as plt
-import sys
 import numpy as np
 import os
 
-# import random, os
 
-def mean(X):
-    return np.sum(X, axis=0) / len(X)
-
-
-def std_dev(X, X_bar):
-    return np.sqrt(np.sum((X - X_bar) ** 2, axis=0))
+def mean(x):
+    return np.sum(x, axis=0) / len(x)
 
 
-def cov(X, X_bar, Y, Y_bar):
-    return np.sum((X - X_bar) * (Y - Y_bar), axis=0)
+def std_dev(x, x_bar):
+    return np.sqrt(np.sum((x - x_bar) ** 2, axis=0))
 
 
-def aes_internal(inputdata, key):
-    return sbox[inputdata ^ key]
+def cov(x, x_bar, y, y_bar):
+    return np.sum((x - x_bar) * (y - y_bar), axis=0)
+
+
+def aes_internal(input_data, key):
+    return s_box[input_data ^ key]
 
 
 def run_correlation(filepath):
-    global sbox, parameters, value
-    sbox = [
-        # 0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f
+    global s_box, parameters, value
+    s_box = [
+        # 0     1     2     3     4     5     6     7     8     9     a     b     c     d     e     f
         0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,  # 0
         0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,  # 1
         0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,  # 2
@@ -51,9 +48,7 @@ def run_correlation(filepath):
     parameters = TraceSetParameterMap()
     print(parameters)
     zoomS = 0
-#    zoomE = 1000
-    zoomE=220000
-    fig = plt.figure()
+    zoomE = 220000
     start = 0
     number = 1000
     displayLabels = 4
@@ -64,8 +59,6 @@ def run_correlation(filepath):
     useIntermediate = True
     data = np.zeros((dataN - dataS, number), int)
     trace_array = np.zeros((number, zoomE - zoomS), float)
-    # print(trace_array)
-    scale_X = None
 
     with trsfile.open(filepath, 'r') as traces:
         print(traces.get_headers())
@@ -99,7 +92,7 @@ def run_correlation(filepath):
     print(data)
     print(data.shape)
     with trsfile.trs_open(
-            filepath[0:-4] + '+CORRINTERMEDIATE.trs',  # File name of the trace set
+            filepath[0:-4] + '+CORR-INTERMEDIATE.trs',  # File name of the trace set
             'w',  # Mode: r, w, x, a (default to x)
             # Zero or more options can be passed (supported options depend on the storage engine)
             engine='TrsEngine',  # Optional: how the trace set is stored (defaults to TrsEngine)
@@ -116,7 +109,7 @@ def run_correlation(filepath):
             #   0 (False): Disabled (default)
             #   1 (True) : TRS file updated after every trace
             #   N        : TRS file is updated after N traces
-    ) as ctraces:
+    ) as c_traces:
         t_bar = mean(trace_array)
         # print("t_bar")
         # print(t_bar)
@@ -143,7 +136,7 @@ def run_correlation(filepath):
                 plt.plot(correlation)
 
             # Adding one Trace
-            ctraces.append(
+            c_traces.append(
                 trsfile.Trace(
                     trsfile.SampleCoding.FLOAT,
                     correlation,
