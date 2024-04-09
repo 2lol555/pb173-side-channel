@@ -6,7 +6,7 @@ from trsfile.traceparameter import ByteArrayParameter, ParameterType, TraceParam
 import matplotlib.pyplot as plt
 import sys
 import numpy as np
-
+import os
 
 # import random, os
 
@@ -51,8 +51,8 @@ def run_correlation(filepath):
     parameters = TraceSetParameterMap()
     print(parameters)
     zoomS = 0
-    zoomE = 1000
-    # zoomE=22000
+#    zoomE = 1000
+    zoomE=220000
     fig = plt.figure()
     start = 0
     number = 1000
@@ -109,7 +109,7 @@ def run_correlation(filepath):
                 trsfile.Header.SCALE_Y: 1,
                 trsfile.Header.DESCRIPTION: 'Correlation Traces',
                 trsfile.Header.TRACE_PARAMETER_DEFINITIONS: TraceParameterDefinitionMap(
-                    {'LEGACY_DATA': TraceParameterDefinition(ParameterType.BYTE, 1, 0)})
+                    {'LEGACY_DATA': TraceParameterDefinition(ParameterType.BYTE, 32, 0)})
             },
             padding_mode=trsfile.TracePadding.AUTO,  # Optional: padding mode (defaults to TracePadding.AUTO)
             live_update=True  # Optional: updates the TRS file for live preview (small performance hit)
@@ -147,7 +147,7 @@ def run_correlation(filepath):
                 trsfile.Trace(
                     trsfile.SampleCoding.FLOAT,
                     correlation,
-                    TraceParameterMap({'LEGACY_DATA': ByteArrayParameter([j])})
+                    TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(os.urandom(32))})
                 )
             )
     plt.xlabel("Time")

@@ -1,5 +1,6 @@
 import trsfile
-from trsfile.parametermap import TraceSetParameterMap, TraceParameterMap, TraceParameterDefinitionMap
+from trsfile.parametermap import TraceParameterMap, TraceParameterDefinitionMap 
+from trsfile.traceparameter import ByteArrayParameter, ParameterType, TraceParameterDefinition
 import trsfile.traceparameter as tp
 import matplotlib.pyplot as plt
 import sys
@@ -62,52 +63,39 @@ def plot(traces, copies):
 
 
 def create_trs():
-    #TODO: copy header from original trs file
-    with trsfile.trs_open(
-            EXPORT_PATH,                 # File name of the trace set
-		'w',                             # Mode: r, w, x, a (default to x)
-		# Zero or more options can be passed (supported options depend on the storage engine)
-		engine = 'TrsEngine',            # Optional: how the trace set is stored (defaults to TrsEngine)
-		headers = {                      # Optional: headers (see Header class)
-			trsfile.Header.TRS_VERSION: 2,
-			trsfile.Header.SCALE_X: 1e-6,
-			trsfile.Header.SCALE_Y: 0.1,
-			trsfile.Header.DESCRIPTION: 'Aligned Peak',
-			trsfile.Header.TRACE_PARAMETER_DEFINITIONS: TraceParameterDefinitionMap(
-				{'LEGACY_DATA': tp.TraceParameterDefinition(tp.ParameterType.BYTE, 16, 0)})
-		},
-		padding_mode = trsfile.TracePadding.AUTO,# Optional: padding mode (defaults to TracePadding.AUTO)
-		live_update = True               # Optional: updates the TRS file for live preview (small performance hit)
-		                                 #   0 (False): Disabled (default)
-		                                 #   1 (True) : TRS file updated after every trace
-		                                 #   N        : TRS file is updated after N traces
-	) as traces:
+    data = []
 
-        #TODO: copy legacy data from original traces
-        
-        with trsfile.open(sys.argv[1], 'r') as input_traces:
-            data = []
+    with trsfile.trs_open(sys.argv[1], 'r', enigine='TrsEngine') as traces:
+        with trsfile.trs_open(EXPORT_PATH, 'w', headers = {
+            trsfile.Header.TRS_VERSION: 2,
+            trsfile.Header.DESCRIPTION: "Copied",
+            trsfile.Header.SCALE_X: traces.get_headers().get(trsfile.Header.SCALE_X),
+            trsfile.Header.SCALE_Y: traces.get_headers().get(trsfile.Header.SCALE_Y),
+            trsfile.Header.TRACE_PARAMETER_DEFINITIONS: TraceParameterDefinitionMap(
+				{'LEGACY_DATA': tp.TraceParameterDefinition(tp.ParameterType.BYTE, 32, 0)})
+            }, \
+                padding_mode=trsfile.TracePadding.AUTO,live_update=True, engine='TrsEngine') as new_traces: 
             for i in trange(NUM_OF_TRACES):
                 if i == 0:
-                    data.append(np.array(input_traces[0].samples, float))
+                    data.append(np.array(traces[0].samples))
                 else:
-                    data.append(np.array(input_traces[i].samples, float))
-                    aligned = align(np.array(data), peak_disalignment(np.array(data)))
-            # Adding one Trace
-                traces.append(
+                    data.append(np.array(traces[i].samples))
+                    aligned = align(np.array(data), peak_disalignment(np.array(data)))[0]
+                # Adding one Trace
+                new_traces.append(
                     trsfile.Trace(
                         trsfile.SampleCoding.FLOAT,
-                        data[0] if i == 0 else aligned[0],
-                        TraceParameterMap({'LEGACY_DATA': tp.ByteArrayParameter(os.urandom(16))})
+                        data[0] if i == 0 else aligned, 
+                        TraceParameterMap({'LEGACY_DATA':
+                            tp.ByteArrayParameter(bytes(traces[i].parameters['LEGACY_DATA'].value))}),
                     )
                 )
                 if (len(data) > 1):
                     data.pop()
-
-def main(): 
+def main():
     create_trs()
-    #plot(data, aligned_traces)    
 
 if __name__ == "__main__":
     main()
     run_correlation(EXPORT_PATH)
+
