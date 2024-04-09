@@ -6,6 +6,7 @@ This repository contains files pertaining to the course **PB173 Tematicky zamera
 - numpy
 - matplotlib
 - tqdm
+- docopt
 # Currently implemented alignment methods
 ## Peak alignment
 ### About

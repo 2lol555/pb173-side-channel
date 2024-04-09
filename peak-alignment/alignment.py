@@ -6,13 +6,28 @@ import sys
 import numpy as np
 from correlation import run_correlation
 from tqdm import trange
-
 from typing import Any
+from docopt import docopt
 
-WINDOW_SIZE: int = 500
-START: int = 25000
-NUM_OF_TRACES: int = 1000
-EXPORT_PATH: str = sys.argv[1][0:-4] + '+PEAK_ALIGN.trs'
+doc = """
+
+Usage: python3 alignment.py <input-file> [options]
+
+Options:
+    -h --help       Show this screen.
+    -w WS           <int> The size of the alignment window in samples. [default: 500]
+    -s S            <int> The start of the window in samples. [default: 0]
+    -n NT           <int> The number of traces to parse. [default: 5]
+"""
+
+arguments = docopt(doc, sys.argv)
+
+
+WINDOW_SIZE: int = int(arguments["-w"])
+START: int = int(arguments["-s"])
+NUM_OF_TRACES: int = int(arguments["-n"])
+EXPORT_PATH: str = arguments["<input-file>"] + '+PEAK_ALIGN.trs'
+INPUT_FILE: str = arguments["<input-file>"]
 
 
 def align(traces_list: Any, diffs: Any) -> Any:
@@ -67,7 +82,7 @@ def plot(traces, copies) -> Any:
 
 def create_trs() -> None:
     data = []
-    with trsfile.trs_open(sys.argv[1], 'r', enigine='TrsEngine') as traces:
+    with trsfile.trs_open(INPUT_FILE, 'r', enigine='TrsEngine') as traces:
         with trsfile.trs_open(EXPORT_PATH, 'w', headers={
             trsfile.Header.TRS_VERSION: 2,
             trsfile.Header.DESCRIPTION: "Copied",
