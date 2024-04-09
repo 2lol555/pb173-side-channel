@@ -6,6 +6,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
+s_box = None
+parameters = None
+value = None
+
 
 def mean(x):
     return np.sum(x, axis=0) / len(x)

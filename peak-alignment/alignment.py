@@ -7,13 +7,15 @@ import numpy as np
 from correlation import run_correlation
 from tqdm import trange
 
-WINDOW_SIZE = 500
-START = 25000
-NUM_OF_TRACES = 1000
-EXPORT_PATH = sys.argv[1][0:-4] + '+PEAK_ALIGN.trs'
+from typing import Any
+
+WINDOW_SIZE: int = 500
+START: int = 25000
+NUM_OF_TRACES: int = 1000
+EXPORT_PATH: str = sys.argv[1][0:-4] + '+PEAK_ALIGN.trs'
 
 
-def align(traces_list, diffs):
+def align(traces_list: Any, diffs: Any) -> Any:
     aligned = [np.array([]) for _ in range(len(traces_list) - 1)]
     for i in range(len(traces_list) - 1):
         peak_idx = np.argmax(traces_list[i + 1], axis=0)
@@ -34,7 +36,7 @@ def align(traces_list, diffs):
     return aligned
 
 
-def peak_disalignment(traces):
+def peak_disalignment(traces) -> Any:
     diffs = []
     template = np.argmax(traces[0], axis=0)
     for i in range(1, len(traces)):
@@ -43,7 +45,7 @@ def peak_disalignment(traces):
     return diffs
 
 
-def plot(traces, copies):
+def plot(traces, copies) -> Any:
     _, axs = plt.subplots(2)
 
     # Plot the first subplot
@@ -63,7 +65,7 @@ def plot(traces, copies):
     plt.show()
 
 
-def create_trs():
+def create_trs() -> None:
     data = []
     with trsfile.trs_open(sys.argv[1], 'r', enigine='TrsEngine') as traces:
         with trsfile.trs_open(EXPORT_PATH, 'w', headers={
@@ -94,7 +96,7 @@ def create_trs():
                     data.pop()
 
 
-def main():
+def main() -> None:
     create_trs()
     run_correlation(EXPORT_PATH)
 
