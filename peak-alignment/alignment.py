@@ -12,7 +12,7 @@ from tqdm import trange
 WINDOW_SIZE = 500
 START = 25000
 NUM_OF_TRACES = 1000
-EXPORT_PATH = 'trace-set.trs'
+EXPORT_PATH = sys.argv[1][0:-4]+'+PEAK_ALIGN.trs'
 
 
 def align(traces_list, diffs):
