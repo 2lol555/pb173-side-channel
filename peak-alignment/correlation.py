@@ -67,13 +67,8 @@ def run_correlation(filepath):
             print(header, '=', value)
         scale_X = traces.get_headers().get(trsfile.Header.SCALE_X)
 
-        #    print(dir(traces))
-
         for i, trace in enumerate(traces[start:start + number]):
-            # print(trace.parameters['LEGACY_DATA'])
             trace_array[i] = trace.samples[zoomS:zoomE]
-            # print(trace.samples)
-            # print(type(trace_array[i]))
             for j in range(dataS, dataN):
                 if useIntermediate:
                     if useHW:
@@ -111,23 +106,16 @@ def run_correlation(filepath):
             #   N        : TRS file is updated after N traces
     ) as c_traces:
         t_bar = mean(trace_array)
-        # print("t_bar")
-        # print(t_bar)
         o_t = std_dev(trace_array, t_bar)
-        # print("o_t")
-        # print(o_t)
 
         for j in range(dataS, dataN):
             intermediate = np.array([data[j - dataS]]).transpose()
-            # print("intermediate")
-            # print(intermediate)
 
             d_bar = mean(intermediate)
             o_d = std_dev(intermediate, d_bar)
             covariance = cov(trace_array, t_bar, intermediate, d_bar)
             correlation = covariance / (o_t * o_d)
 
-            # plt.plot(correlation, label="Inp["+str(j)+"]")
             if j < displayLabels:
                 plt.plot(correlation, label="Inp[" + str(j) + "]")
             elif j == displayLabels:
