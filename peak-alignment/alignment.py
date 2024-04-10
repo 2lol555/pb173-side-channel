@@ -33,30 +33,30 @@ INPUT_FILE: str = arguments["<input-file>"]
 def align(traces_list: Any, diffs: Any) -> Any:
     aligned = [np.array([]) for _ in range(len(traces_list) - 1)]
     for i in range(len(traces_list) - 1):
-        peak_idx = np.argmax(traces_list[i + 1], axis=0)
+        peak_idx = np.argmax(traces_list[i + 1][START:START + WINDOW_SIZE], axis=0) + START
         average = np.mean(traces_list[i + 1], axis=0)
 
-        aligned[i] = np.concatenate((aligned[i], traces_list[i + 1][:peak_idx - WINDOW_SIZE]))
+        aligned[i] = np.concatenate((aligned[i], traces_list[i + 1][:START]))
 
         if diffs[i][0] < 0:
             aligned[i] = np.concatenate((aligned[i], np.tile(average, abs(diffs[i][0]))))
             aligned[i] = np.concatenate(
-                (aligned[i], traces_list[i + 1][peak_idx - WINDOW_SIZE: peak_idx + WINDOW_SIZE]))
+                (aligned[i], traces_list[i + 1][START: START + WINDOW_SIZE]))
         else:
             aligned[i] = np.concatenate(
-                (aligned[i], traces_list[i + 1][peak_idx - WINDOW_SIZE + diffs[i][0]: peak_idx + WINDOW_SIZE]))
+                (aligned[i], traces_list[i + 1][START + diffs[i][0]: START + WINDOW_SIZE]))
 
-        aligned[i] = np.concatenate((aligned[i], traces_list[i + 1][peak_idx + WINDOW_SIZE:]))
+        aligned[i] = np.concatenate((aligned[i], traces_list[i + 1][START + WINDOW_SIZE:]))
 
     return aligned
 
 
 def peak_disalignment(traces) -> Any:
     diffs = []
-    template = np.argmax(traces[0], axis=0)
+    template = np.argmax(traces[0][START:START+WINDOW_SIZE], axis=0)
     for i in range(1, len(traces)):
         diffs.append([])
-        diffs[i - 1].append(np.argmax(traces[i][template - WINDOW_SIZE: template + WINDOW_SIZE], axis=0) - WINDOW_SIZE)
+        diffs[i - 1].append(np.argmax(traces[i][START: START + WINDOW_SIZE], axis=0) - template)
     return diffs
 
 
