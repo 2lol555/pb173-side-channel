@@ -28,7 +28,7 @@ START: int = int(arguments["-s"])
 NUM_OF_TRACES: int = int(arguments["-n"])
 EXPORT_PATH: str = arguments["<input-file>"] + '+PEAK_ALIGN.trs'
 INPUT_FILE: str = arguments["<input-file>"]
-WINDOW_RESAMPLE_PATH: str = "";
+WINDOW_RESAMPLE_PATH: str = "AES_fixed_rand_input_CAFEBABEDEADBEEF0001020304050607_SAVEEVEN_0_1000_+AWR(1000,0.99).trs";
 
 def align(traces_list: Any, diffs: Any) -> Any:
     aligned = [np.array([]) for _ in range(len(traces_list) - 1)]
@@ -99,6 +99,8 @@ def create_trs() -> None:
                     else:
                         with trsfile.trs_open(WINDOW_RESAMPLE_PATH, 'r', engine='TrsEngine') as resample:
                             data.append(np.array(resample[0].samples))
+                        data.append(np.array(traces[0].samples))
+                        aligned = align(np.array(data), peak_disalignment(np.array(data)))[0]
                 else:
                     data.append(np.array(traces[i].samples))
                     aligned = align(np.array(data), peak_disalignment(np.array(data)))[0]
