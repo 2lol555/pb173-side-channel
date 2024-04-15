@@ -46,11 +46,12 @@ def align(traces_list: Any, diffs: Any) -> Any:
             aligned[i] = np.concatenate(
                 (aligned[i], traces_list[i + 1][START + diffs[i][0]: START + WINDOW_SIZE]))
         
+        aligned[i] = np.concatenate((aligned[i], traces_list[i + 1][START + WINDOW_SIZE:]))
+        
         if (len(aligned[i]) < 220000):
             aligned[i] = np.concatenate((aligned[i], np.tile(average, 220000 - len(aligned[i]))))
         else:
-            aligned[i] = aligned[:220000]
-        aligned[i] = np.concatenate((aligned[i], traces_list[i + 1][START + WINDOW_SIZE:]))
+            aligned[i] = aligned[i][0:220000]
 
     return aligned
 
