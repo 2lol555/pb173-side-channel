@@ -28,7 +28,7 @@ START: int = int(arguments["-s"])
 NUM_OF_TRACES: int = int(arguments["-n"])
 EXPORT_PATH: str = arguments["<input-file>"] + '+PEAK_ALIGN.trs'
 INPUT_FILE: str = arguments["<input-file>"]
-
+WINDOW_RESAMPLE_PATH: str = "";
 
 def align(traces_list: Any, diffs: Any) -> Any:
     aligned = [np.array([]) for _ in range(len(traces_list) - 1)]
@@ -94,7 +94,11 @@ def create_trs() -> None:
                               engine='TrsEngine') as new_traces:
             for i in trange(NUM_OF_TRACES):
                 if i == 0:
-                    data.append(np.array(traces[0].samples))
+                    if WINDOW_RESAMPLE_PATH == "" :
+                        data.append(np.array(traces[0].samples))
+                    else:
+                        with trsfile.trs_open(WINDOW_RESAMPLE_PATH, 'r', engine='TrsEngine') as resample:
+                            data.append(np.array(resample[0].samples))
                 else:
                     data.append(np.array(traces[i].samples))
                     aligned = align(np.array(data), peak_disalignment(np.array(data)))[0]
@@ -102,7 +106,7 @@ def create_trs() -> None:
                 new_traces.append(
                     trsfile.Trace(
                         trsfile.SampleCoding.FLOAT,
-                        data[0] if i == 0 else aligned,
+                        data[0] if i == 0 and WINDOW_RESAMPLE_PATH == "" else aligned,
                         TraceParameterMap({'LEGACY_DATA': tp.ByteArrayParameter(
                             bytes(traces[i].parameters['LEGACY_DATA'].value))}),
                     )
