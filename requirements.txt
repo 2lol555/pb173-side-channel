@@ -1,0 +1,5 @@
+trsfile
+numpy
+matplotlib
+tqdm
+docopt
