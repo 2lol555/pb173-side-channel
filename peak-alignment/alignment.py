@@ -18,6 +18,7 @@ Options:
     -w WS           <int> The size of the alignment window in samples. [default: 500]
     -s S            <int> The start of the window in samples. [default: 0]
     -n NT           <int> The number of traces to parse. [default: 5]
+    -r WRP          <str> Path to the traces with absolute window resample. [default: ]
 """
 
 arguments = docopt(doc, sys.argv)
@@ -28,7 +29,7 @@ START: int = int(arguments["-s"])
 NUM_OF_TRACES: int = int(arguments["-n"])
 EXPORT_PATH: str = arguments["<input-file>"] + '+PEAK_ALIGN.trs'
 INPUT_FILE: str = arguments["<input-file>"]
-WINDOW_RESAMPLE_PATH: str = "AES_fixed_rand_input_CAFEBABEDEADBEEF0001020304050607_SAVEEVEN_0_1000_+AWR(1000,0.99).trs";
+WINDOW_RESAMPLE_PATH: str = arguments["-r"];
 
 def align(traces_list: Any, diffs: Any) -> Any:
     aligned = [np.array([]) for _ in range(len(traces_list) - 1)]
