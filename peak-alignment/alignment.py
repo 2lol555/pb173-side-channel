@@ -8,6 +8,8 @@ from correlation import run_correlation
 from tqdm import trange
 from typing import Any
 from docopt import docopt
+import scipy.stats
+from scipy.stats import pearsonr
 
 doc = """
 
@@ -15,10 +17,11 @@ Usage: python3 alignment.py <input-file> [options]
 
 Options:
     -h --help       Show this screen.
-    -w WS           <int> The size of the alignment window in samples. [default: 500]
-    -s S            <int> The start of the window in samples. [default: 0]
-    -n NT           <int> The number of traces to parse. [default: 5]
-    -r WRP          <str> Path to the traces with absolute window resample. [default: ]
+    -w WS               <int> The size of the alignment window in samples. [default: 500]
+    -s S                <int> The start of the window in samples. [default: 0]
+    -n NT               <int> The number of traces to parse. [default: 5]
+    -r WRP              <str> Path to the traces with absolute window resample. [default: ]
+    -c --correlation    <bool> If true, peak each trace. [default: False]
 """
 
 arguments = docopt(doc, sys.argv)
@@ -29,12 +32,13 @@ START: int = int(arguments["-s"])
 NUM_OF_TRACES: int = int(arguments["-n"])
 EXPORT_PATH: str = arguments["<input-file>"] + '+PEAK_ALIGN.trs'
 INPUT_FILE: str = arguments["<input-file>"]
-WINDOW_RESAMPLE_PATH: str = arguments["-r"];
+WINDOW_RESAMPLE_PATH: str = arguments["-r"]
+CORRELATION: str = arguments["-c"]
+
 
 def align(traces_list: Any, diffs: Any) -> Any:
     aligned = [np.array([]) for _ in range(len(traces_list) - 1)]
     for i in range(len(traces_list) - 1):
-        peak_idx = np.argmax(traces_list[i + 1][START:START + WINDOW_SIZE], axis=0) + START
         average = np.mean(traces_list[i + 1], axis=0)
 
         aligned[i] = np.concatenate((aligned[i], traces_list[i + 1][:START]))
@@ -49,7 +53,7 @@ def align(traces_list: Any, diffs: Any) -> Any:
         
         aligned[i] = np.concatenate((aligned[i], traces_list[i + 1][START + WINDOW_SIZE:]))
         
-        if (len(aligned[i]) < 220000):
+        if len(aligned[i]) < 220000:
             aligned[i] = np.concatenate((aligned[i], np.tile(average, 220000 - len(aligned[i]))))
         else:
             aligned[i] = aligned[i][0:220000]
@@ -86,6 +90,21 @@ def plot(traces, copies) -> Any:
     plt.show()
 
 
+def corr(data):
+    maximum = 0
+    max_location = (0, 0)
+    for i in range(0, data[0], 10):
+        for j in range(0, data[0], 10):
+            sol = abs(scipy.stats.pearsonr(data[0][i:i+WINDOW_SIZE], data[1][j:j+WINDOW_SIZE]))
+            if sol > maximum:
+                max_location = (i,j)
+                maximum = sol
+
+    dif = [max_location[0] - max_location[1]]
+    return align(data, dif)
+
+
+
 def create_trs() -> None:
     data = []
     with trsfile.trs_open(INPUT_FILE, 'r', enigine='TrsEngine') as traces:
@@ -109,7 +128,10 @@ def create_trs() -> None:
                         aligned = align(np.array(data), peak_disalignment(np.array(data)))[0]
                 else:
                     data.append(np.array(traces[i].samples))
-                    aligned = align(np.array(data), peak_disalignment(np.array(data)))[0]
+                    if CORRELATION:
+                        aligned = corr(np.array(data))
+                    else:
+                        aligned = align(np.array(data), peak_disalignment(np.array(data)))[0]
                 # Adding one Trace
                 new_traces.append(
                     trsfile.Trace(
