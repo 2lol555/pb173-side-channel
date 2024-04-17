@@ -21,7 +21,7 @@ Options:
     -s S                <int> The start of the window in samples. [default: 0]
     -n NT               <int> The number of traces to parse. [default: 5]
     -r WRP              <str> Path to the traces with absolute window resample. [default: ]
-    -c --correlation    <bool> If true, peak each trace. [default: False]
+    -c COR              <bool> If true, peak each trace. [default: False]
 """
 
 arguments = docopt(doc, sys.argv)
@@ -93,14 +93,16 @@ def plot(traces, copies) -> Any:
 def corr(data):
     maximum = 0
     max_location = (0, 0)
-    for i in range(0, data[0], 10):
-        for j in range(0, data[0], 10):
-            sol = abs(scipy.stats.pearsonr(data[0][i:i+WINDOW_SIZE], data[1][j:j+WINDOW_SIZE]))
+    for i in range(0, len(data[0]) - WINDOW_SIZE, 1000):
+        for j in range(i, len(data[0]) - WINDOW_SIZE, 1000):
+            sol = abs(scipy.stats.pearsonr(data[0][i:i+WINDOW_SIZE],data[1][j:j+WINDOW_SIZE]).statistic)
             if sol > maximum:
                 max_location = (i,j)
                 maximum = sol
 
-    dif = [max_location[0] - max_location[1]]
+    global START
+    START = i
+    dif = [[max_location[0] - max_location[1]]]
     return align(data, dif)
 
 
@@ -129,7 +131,7 @@ def create_trs() -> None:
                 else:
                     data.append(np.array(traces[i].samples))
                     if CORRELATION:
-                        aligned = corr(np.array(data))
+                        aligned = corr(np.array(data))[0]
                     else:
                         aligned = align(np.array(data), peak_disalignment(np.array(data)))[0]
                 # Adding one Trace
