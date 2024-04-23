@@ -140,7 +140,7 @@ def create_trs() -> None:
                     data.append(np.array(traces[i].samples))
                     if CORRELATION:
                         dif = correlation_alignment(np.array(data))
-                        aligned = (np.array(data), dif)[0]
+                        aligned = align(np.array(data), dif)[0]
                     else:
                         aligned = align(np.array(data), peak_alignment(np.array(data)))[0]
 
