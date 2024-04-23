@@ -10,7 +10,7 @@ from typing import Any
 from docopt import docopt
 import scipy.stats
 from scipy.stats import pearsonr
-
+import math
 doc = """
 
 Usage: python3 alignment.py <input-file> [options]
@@ -21,7 +21,7 @@ Options:
     -s S                <int> The start of the window in samples. [default: 0]
     -n NT               <int> The number of traces to parse. [default: 5]
     -r WRP              <str> Path to the traces with absolute window resample. [default: ]
-    -c COR              <bool> If true, peak each trace. [default: False]
+    -c COR              <bool> If true, peak each trace. [default: ]
 """
 
 arguments = docopt(doc, sys.argv)
@@ -33,7 +33,7 @@ NUM_OF_TRACES: int = int(arguments["-n"])
 EXPORT_PATH: str = arguments["<input-file>"] + '+PEAK_ALIGN.trs'
 INPUT_FILE: str = arguments["<input-file>"]
 WINDOW_RESAMPLE_PATH: str = arguments["-r"]
-CORRELATION: str = arguments["-c"]
+CORRELATION: bool = arguments["-c"]
 
 
 def align(traces_list: Any, diffs: Any) -> Any:
@@ -89,20 +89,25 @@ def plot(traces, copies) -> Any:
     plt.tight_layout()  # Adjust layout to prevent overlap
     plt.show()
 
-
 def corr(data):
     maximum = 0
     max_location = (0, 0)
-    for i in range(0, len(data[0]) - WINDOW_SIZE, 1000):
-        for j in range(i, len(data[0]) - WINDOW_SIZE, 1000):
-            sol = abs(scipy.stats.pearsonr(data[0][i:i+WINDOW_SIZE],data[1][j:j+WINDOW_SIZE]).statistic)
-            if sol > maximum:
-                max_location = (i,j)
-                maximum = sol
-
     global START
-    START = i
-    dif = [[max_location[0] - max_location[1]]]
+    if START == 0:
+        for i in trange(WINDOW_SIZE, math.trunc((len(data[0]) * 0.9)), 1000):
+            for j in range(max(i - WINDOW_SIZE, 0), min(len(data[1]) - WINDOW_SIZE, i + WINDOW_SIZE), 10):
+                sol = (scipy.stats.pearsonr(data[0][i:i+WINDOW_SIZE],data[1][j:j+WINDOW_SIZE]).statistic)
+                if sol > maximum:
+                    max_location = (i,j)
+                    maximum = sol
+                    START = i
+    else:
+        for j in range(max(START-WINDOW_SIZE, 0), min((len(data[1]) - WINDOW_SIZE), START + WINDOW_SIZE), 10):
+            sol = abs(scipy.stats.pearsonr(data[0][START:START+WINDOW_SIZE],data[1][j:j+WINDOW_SIZE]).statistic)
+            if sol > maximum:
+                max_location = (START,j)
+                maximum = sol
+    dif = [[max_location[1] - max_location[0]]]
     return align(data, dif)
 
 
