@@ -1,6 +1,5 @@
 import trsfile
 from trsfile.parametermap import TraceSetParameterMap
-import trsfile.traceparameter as tp
 from trsfile.parametermap import TraceParameterMap, TraceParameterDefinitionMap
 from trsfile.traceparameter import ByteArrayParameter, ParameterType, TraceParameterDefinition
 import matplotlib.pyplot as plt
@@ -23,12 +22,19 @@ def cov(X, X_bar, Y, Y_bar):
     return np.sum((X - X_bar) * (Y - Y_bar), axis=0)
 
 
-def aes_internal(inputdata, key):
+def aes_internal(inputdata, key, sbox):
     return sbox[inputdata ^ key]
 
 
 def run_correlation(filepath):
-    global sbox, parameters, value
+    """
+        Runs correlation analysis on the saved and aligned TRS files
+        Show the correlation at different indexes in the file
+    :param
+        filepath: TRS file path to analyze
+    :return:
+        Nothing - just visualizes the correlation
+    """
     sbox = [
         # 0    1    2    3    4    5    6    7    8    9    a    b    c    d    e    f
         0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,  # 0
@@ -63,8 +69,6 @@ def run_correlation(filepath):
     useHW = False
     keyByte = 0xCA
     useIntermediate = True
-    # print(trace_array)
-    scale_X = None
 
     with trsfile.open(filepath, 'r') as traces:
         print(traces.get_headers())
@@ -77,30 +81,20 @@ def run_correlation(filepath):
             print(header, '=', value)
         scale_X = traces.get_headers().get(trsfile.Header.SCALE_X)
 
-        #    print(dir(traces))
 
         for i, trace in enumerate(traces[start:start + number]):
-            # print(trace.parameters['LEGACY_DATA'])
             trace_array[i] = trace.samples[zoomS:zoomE]
-            # print(trace.samples)
-            # print(type(trace_array[i]))
             for j in range(dataS, dataN):
                 if useIntermediate:
                     if useHW:
-                        data[j - dataS][i] = aes_internal(trace.parameters['LEGACY_DATA'].value[j], keyByte)
+                        data[j - dataS][i] = aes_internal(trace.parameters['LEGACY_DATA'].value[j], keyByte, sbox)
                     else:
-                        data[j - dataS][i] = HW[aes_internal(trace.parameters['LEGACY_DATA'].value[j], keyByte)]
+                        data[j - dataS][i] = HW[aes_internal(trace.parameters['LEGACY_DATA'].value[j], keyByte, sbox)]
                 else:
                     if useHW:
                         data[j - dataS][i] = HW[trace.parameters['LEGACY_DATA'].value[j]]
                     else:
                         data[j - dataS][i] = trace.parameters['LEGACY_DATA'].value[j]
-    print("trace_array")
-    print(trace_array)
-    print(trace_array.shape)
-    print("data")
-    print(data)
-    print(data.shape)
     with trsfile.trs_open(
             filepath[0:-4] + '+CORRINTERMEDIATE.trs',  # File name of the trace set
             'w',  # Mode: r, w, x, a (default to x)
@@ -121,23 +115,16 @@ def run_correlation(filepath):
             #   N        : TRS file is updated after N traces
     ) as ctraces:
         t_bar = mean(trace_array)
-        # print("t_bar")
-        # print(t_bar)
         o_t = std_dev(trace_array, t_bar)
-        # print("o_t")
-        # print(o_t)
 
         for j in range(dataS, dataN):
             intermediate = np.array([data[j - dataS]]).transpose()
-            # print("intermediate")
-            # print(intermediate)
 
             d_bar = mean(intermediate)
             o_d = std_dev(intermediate, d_bar)
             covariance = cov(trace_array, t_bar, intermediate, d_bar)
             correlation = covariance / (o_t * o_d)
 
-            # plt.plot(correlation, label="Inp["+str(j)+"]")
             if j < displayLabels:
                 plt.plot(correlation, label="Inp[" + str(j) + "]")
             elif j == displayLabels:
@@ -153,6 +140,7 @@ def run_correlation(filepath):
                     TraceParameterMap({'LEGACY_DATA': ByteArrayParameter(os.urandom(32))})
                 )
             )
+
     plt.xlabel("Time")
     plt.ylabel("Correlation Intermediates")
     plt.title("Correlation of indexes: [" + str(dataS) + "-" + str(dataS + dataN - 1) + "]")
@@ -162,6 +150,7 @@ def run_correlation(filepath):
 
 def main():
     with open(sys.argv[1], "r") as file:
-        run_corelation(file)
+        run_correlation(file)
+
 if __name__ == "__main__":
     main()
