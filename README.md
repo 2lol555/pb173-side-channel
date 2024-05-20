@@ -21,5 +21,11 @@ The project currently aligns the traces, saves the aligned traces as a new file 
 1. Install all prerequisites listed in the readme using the command `pip install -r requirements.txt`
 2. Clone the repository
 3. Run the command `python3 alignment.py "path to .trs file"`
+### Example of usage
+- Trs file can be found ["here"](https://is.muni.cz/auth/de/536539/AES_fixed_rand_input_CAFEBABEDEADBEEF0001020304050607_SAVEEVEN_0_1000_MIS_1000_.trs)
+- Peak alginment
+    `python3 alignment.py -s 14000 -w 4000 -n 1000 AES_fixed_rand_input_CAFEBABEDEADBEEF0001020304050607_SAVEEVEN_0_1000_MIS_1000_.trs`
+- Correlation alignment
+    `python3 alignment.py -c True -w 4000 -n 1000 AES_fixed_rand_input_CAFEBABEDEADBEEF0001020304050607_SAVEEVEN_0_1000_MIS_1000_.trs`
 ### Planned improvements
 Implement analyzing the peak according to the window resample values in the traces.
